@@ -144,14 +144,24 @@ var pie = d3.pie().sort(null).value(function (d) {
 // ]);
 
 var arcPath = d3.arc().outerRadius(dimentions.radius).innerRadius(dimentions.radius / 2); // console.log(arcPath(angles[0]));
-//update function
+
+var colour = d3.scaleOrdinal(d3["schemeSet3"]); //update function
 
 var update = function update(data) {
-  console.log(data); //join enhanced (pie) data to path elements
+  console.log(data); //update color scale domain
 
-  var path = graph.selectAll("path").data(pie(data));
-  console.log(path.enter());
-  path.enter().append("path").attr("class", "arc").attr("d", arcPath).attr("stroke", "#fff").attr("stroke-width", 3);
+  colour.domain(data.map(function (d) {
+    return d.name;
+  })); //join enhanced (pie) data to path elements
+
+  var paths = graph.selectAll("path").data(pie(data)); //handle the exit selection
+
+  paths.exit().transition().duration(750).attrTween("d", arcTweenExit).remove(); //handle the current DOM path updates
+
+  paths.attr("d", arcPath);
+  paths.enter().append("path").attr("class", "arc").attr("stroke", "#fff").attr("stroke-width", 3).attr("fill", function (d) {
+    return colour(d.data.name);
+  }).transition().duration(750).attrTween("d", arcTweenEnter);
 }; //data array and firestore
 
 
@@ -187,6 +197,22 @@ db.collection("expenses").onSnapshot(function (res) {
   });
   update(data);
 });
+
+var arcTweenEnter = function arcTweenEnter(d) {
+  var i = d3.interpolate(d.startAngle, d.endAngle);
+  return function (t) {
+    d.endAngle = i(t);
+    return arcPath(d);
+  };
+};
+
+var arcTweenExit = function arcTweenExit(d) {
+  var i = d3.interpolate(d.endAngle, d.startAngle);
+  return function (t) {
+    d.startAngle = i(t);
+    return arcPath(d);
+  };
+};
 },{}],"node_modules/parcel-bundler/src/builtins/hmr-runtime.js":[function(require,module,exports) {
 var global = arguments[3];
 var OVERLAY_ID = '__parcel__error__overlay__';
@@ -215,7 +241,7 @@ var parent = module.bundle.parent;
 if ((!parent || !parent.isParcelRequire) && typeof WebSocket !== 'undefined') {
   var hostname = "" || location.hostname;
   var protocol = location.protocol === 'https:' ? 'wss' : 'ws';
-  var ws = new WebSocket(protocol + '://' + hostname + ':' + "46523" + '/');
+  var ws = new WebSocket(protocol + '://' + hostname + ':' + "58421" + '/');
 
   ws.onmessage = function (event) {
     checkedAssets = {};
