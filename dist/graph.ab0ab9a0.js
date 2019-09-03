@@ -158,10 +158,15 @@ var update = function update(data) {
 
   paths.exit().transition().duration(750).attrTween("d", arcTweenExit).remove(); //handle the current DOM path updates
 
-  paths.attr("d", arcPath);
+  paths // .attr("d", arcPath)
+  .transition().duration(750).attrTween("d", arcTweenUpdate);
   paths.enter().append("path").attr("class", "arc").attr("stroke", "#fff").attr("stroke-width", 3).attr("fill", function (d) {
     return colour(d.data.name);
-  }).transition().duration(750).attrTween("d", arcTweenEnter);
+  }).each(function (d) {
+    this._current = d;
+  }).transition().duration(750).attrTween("d", arcTweenEnter); //add events
+
+  graph.selectAll("path").on("mouseover", handleMouseOver).on("mouseout", handleMouseOut).on("click", handleClick);
 }; //data array and firestore
 
 
@@ -199,19 +204,46 @@ db.collection("expenses").onSnapshot(function (res) {
 });
 
 var arcTweenEnter = function arcTweenEnter(d) {
-  var i = d3.interpolate(d.startAngle, d.endAngle);
-  return function (t) {
-    d.endAngle = i(t);
-    return arcPath(d);
-  };
-};
-
-var arcTweenExit = function arcTweenExit(d) {
   var i = d3.interpolate(d.endAngle, d.startAngle);
   return function (t) {
     d.startAngle = i(t);
     return arcPath(d);
   };
+};
+
+var arcTweenExit = function arcTweenExit(d) {
+  var i = d3.interpolate(d.startAngle, d.endAngle);
+  return function (t) {
+    d.startAngle = i(t);
+    return arcPath(d);
+  };
+}; //use function keyword to allow use of "this"
+
+
+function arcTweenUpdate(d) {
+  //   console.log(this._current, d);
+  //interpolate between the two objects
+  var i = d3.interpolate(this._current, d); //update the current prop with new updated data
+
+  this._current = i(0);
+  return function (t) {
+    return arcPath(i(t));
+  };
+} //handle events
+
+
+var handleMouseOver = function handleMouseOver(d, i, n) {
+  // console.log(n[i])
+  d3.select(n[i]).transition("changeSliceFill").duration(300).attr("fill", "#fff");
+};
+
+var handleMouseOut = function handleMouseOut(d, i, n) {
+  d3.select(n[i]).transition("changeSliceFill").duration(300).attr("fill", colour(d.data.name));
+};
+
+var handleClick = function handleClick(d) {
+  var id = d.data.id;
+  db.collection("expenses").doc(id).delete();
 };
 },{}],"node_modules/parcel-bundler/src/builtins/hmr-runtime.js":[function(require,module,exports) {
 var global = arguments[3];
@@ -241,7 +273,7 @@ var parent = module.bundle.parent;
 if ((!parent || !parent.isParcelRequire) && typeof WebSocket !== 'undefined') {
   var hostname = "" || location.hostname;
   var protocol = location.protocol === 'https:' ? 'wss' : 'ws';
-  var ws = new WebSocket(protocol + '://' + hostname + ':' + "58421" + '/');
+  var ws = new WebSocket(protocol + '://' + hostname + ':' + "40889" + '/');
 
   ws.onmessage = function (event) {
     checkedAssets = {};
